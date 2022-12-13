@@ -5,12 +5,12 @@ import (
 	"sync"
 )
 
-const totalJobs = 4
+const totalJobs = 7
 const totalWorkers = 2
 
 func main() {
-	jobs := make(chan int, totalJobs)
-	results := make(chan int, totalJobs)
+	jobs := make(chan int)
+	results := make(chan int)
 
 	for w := 1; w <= totalWorkers; w++ {
 		go worker(w, jobs, results)
