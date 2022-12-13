@@ -96,12 +96,12 @@ func sumAllNumbersFromFile(bytes []byte) int {
 	total := 0
 	file := string(bytes)
 
-	extractCh := dispatch(file)
-	transformCh := worker(extractCh)
-	loadCh := collector(transformCh)
+	dispatchCh := dispatch(file)
+	workerCh := worker(dispatchCh)
+	collectorCh := collector(workerCh)
 
-	for value := range loadCh {
-		fmt.Printf("Load: %+v\n", value)
+	for value := range collectorCh {
+		fmt.Printf("Collector result: %+v\n", value)
 		total = value.Sum
 	}
 
