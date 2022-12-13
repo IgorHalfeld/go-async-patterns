@@ -31,7 +31,7 @@ func main() {
 	close(results)
 }
 
-func worker(id int, jobs <-chan int, results chan<- int) {
+func worker(id int, jobs chan int, results chan int) {
 	var wg sync.WaitGroup
 
 	for j := range jobs {
