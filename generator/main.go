@@ -5,8 +5,7 @@ import "fmt"
 func main() {
 	ch := generator()
 
-	for i := 0; i < 5; i++ {
-		value := <-ch
+	for value := range ch {
 		fmt.Println("Value:", value)
 	}
 }
@@ -15,7 +14,9 @@ func generator() chan int {
 	ch := make(chan int)
 
 	go func() {
-		for i := 0; ; i++ {
+		defer close(ch)
+
+		for i := 0; i < 10; i++ {
 			ch <- i
 		}
 	}()
