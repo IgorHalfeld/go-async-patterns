@@ -1,35 +1,28 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
-	"io"
 	"log"
 	"os"
 	"strconv"
+	"strings"
 )
 
-func sumAllNumbersFromFile(reader *bufio.Reader) int {
+func sumAllNumbersFromFile(bytes []byte) int {
 	total := 0
+	file := string(bytes)
 
-	for {
-		line, err := reader.ReadString('\n')
-		if err != nil {
-			if err != io.EOF {
-				log.Println("End!: ", err.Error())
-			}
+	lines := strings.Split(file, "\n")
 
-			break
-		}
-
-		for _, numberStr := range line {
-			number, err := strconv.Atoi(string(numberStr))
+	for _, line := range lines {
+		numbers := strings.Split(line, " ")
+		for _, numberStr := range numbers {
+			number, err := strconv.Atoi(numberStr)
 			if err != nil {
 				continue
 			}
 
 			total += number
-			fmt.Println("Total now:", total)
 		}
 	}
 
@@ -37,15 +30,12 @@ func sumAllNumbersFromFile(reader *bufio.Reader) int {
 }
 
 func main() {
-	f, err := os.Open("./numbers.txt")
+	f, err := os.ReadFile("./numbers.txt")
 	if err != nil {
 		log.Fatalln(err.Error())
 	}
-	defer f.Close()
 
-	reader := bufio.NewReader(f)
-
-	total := sumAllNumbersFromFile(reader)
+	total := sumAllNumbersFromFile(f)
 
 	fmt.Println("Total:", total)
 }

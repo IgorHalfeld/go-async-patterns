@@ -1,51 +1,120 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
-	"io"
 	"log"
 	"os"
 	"strconv"
+	"strings"
 )
 
-func sumAllNumbersFromFile(reader *bufio.Reader) int {
+type Dispatch struct {
+	Line         string
+	TotalOfLines int
+}
+
+type Worker struct {
+	Sum          int
+	TotalOfLines int
+}
+
+type Collector struct {
+	Sum            int
+	LinesProcessed int
+	TotalOfLines   int
+}
+
+func dispatch(file string) chan Dispatch {
+	outCh := make(chan Dispatch)
+
+	go func(f string) {
+		defer close(outCh)
+
+		lines := strings.Split(file, "\n")
+		totalOfLines := len(lines)
+
+		for _, line := range lines {
+			outCh <- Dispatch{
+				Line:         line,
+				TotalOfLines: totalOfLines,
+			}
+		}
+	}(file)
+
+	return outCh
+}
+
+func worker(inCh chan Dispatch) chan Worker {
+	outCh := make(chan Worker)
+
+	go func() {
+		defer close(outCh)
+
+		for in := range inCh {
+			numbers := strings.Split(in.Line, " ")
+
+			lineTotalSum := 0
+			for _, numberStr := range numbers {
+				number, err := strconv.Atoi(numberStr)
+				if err != nil {
+					continue
+				}
+
+				lineTotalSum += number
+			}
+
+			outCh <- Worker{
+				Sum:          lineTotalSum,
+				TotalOfLines: in.TotalOfLines,
+			}
+		}
+	}()
+
+	return outCh
+}
+
+func collector(inCh chan Worker) chan Collector {
+	outCh := make(chan Collector)
+
+	go func() {
+		defer close(outCh)
+
+		result := Collector{Sum: 0}
+		for processed := range inCh {
+			result.Sum += processed.Sum
+			result.LinesProcessed += 1
+			result.TotalOfLines = processed.TotalOfLines
+		}
+
+		outCh <- result
+	}()
+
+	return outCh
+}
+
+func sumAllNumbersFromFile(bytes []byte) int {
 	total := 0
+	file := string(bytes)
 
-	for {
-		line, err := reader.ReadString('\n')
-		if err != nil {
-			if err != io.EOF {
-				log.Println("End!: ", err.Error())
-			}
+	extractCh := dispatch(file)
+	transformCh := worker(extractCh)
+	loadCh := collector(transformCh)
 
-			break
-		}
-
-		for _, numberStr := range line {
-			number, err := strconv.Atoi(string(numberStr))
-			if err != nil {
-				continue
-			}
-
-			total += number
-			fmt.Println("Total now:", total)
-		}
+	for value := range loadCh {
+		fmt.Printf("Load: %+v\n", value)
+		total = value.Sum
 	}
 
 	return total
 }
 
 func main() {
-	f, err := os.Open("./numbers.txt")
+	f, err := os.ReadFile("./numbers.txt")
 	if err != nil {
 		log.Fatalln(err.Error())
 	}
-	defer f.Close()
 
-	reader := bufio.NewReader(f)
-
-	total := sumAllNumbersFromFile(reader)
+	total := sumAllNumbersFromFile(f)
 
 	fmt.Println("Total:", total)
 }
